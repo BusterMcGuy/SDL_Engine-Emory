@@ -26,9 +26,12 @@ SDL_Window* pWindow = nullptr; // assignin a pointer to mullptr means the addres
 SDL_Renderer* pRenderer = nullptr; // NULL is the address 0. =NULL is essentiall the same as NULLptr
 
 
-SDL_Texture* pMySprite = nullptr;
+SDL_Texture* pMySprite;
 SDL_Rect mySpriteSrc;
 SDL_Rect mySpriteDst;
+
+
+
 
 namespace ye {
 
@@ -47,29 +50,29 @@ namespace ye {
 		SDL_Texture* pTexture;
 		SDL_Rect src;
 		SDL_Rect dst;
-		int aniFrameCount = 1;
-		float aniCurrentFrame = 0;
-		double rotationDegrees = 0;
-		SDL_RendererFlip flipState = SDL_FLIP_NONE;
-		Vec2 position;
+		//int aniFrameCount = 1;
+		//float aniCurrentFrame = 0;
+		//double rotationDegrees = 0;
+		//SDL_RendererFlip flipState = SDL_FLIP_NONE;
+		//Vec2 position;
 
+		Sprite()
+
+		{
+			pTexture = nullptr;
+			src = { 0, 0, 0, 0 };
+			dst = { 0, 0, 0 ,0 };
+		}
 
 		void draw(SDL_Renderer* renderer)
 		{
-			int result = SDL_RenderCopy(pRenderer, pMySprite, &mySpriteSrc, &mySpriteDst);
+			int result = SDL_RenderCopy(renderer, pTexture, &src, &dst);
 			if (result != 0)
 			{
 				std::cout << "Render Failed!" << SDL_GetError() << std::endl;
 			}
 		}
 
-		Sprite()
-		{
-			pTexture = nullptr;
-			src = { 0, 0, 0, 0 };
-			dst = { 0, 0, 0 ,0 };
-
-		}
 
 
 		//a non-default constructor
