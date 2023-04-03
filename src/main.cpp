@@ -500,6 +500,7 @@ bool Init()
 }
 
 Sprite backgroundImage = Sprite();
+Sprite backgroundImage2 = Sprite();
 Sprite playerShip = Sprite();
 Sprite enemyShip = Sprite();
 Sprite kelp = Sprite();
@@ -514,14 +515,20 @@ void load()
 {
 	//loading all textures...
 	//SDL_Texture * IMG_LoadTexture(SDL_Renderer *renderer, const char *file)
-	backgroundImage = Sprite(pRenderer, "../Assets/textures/Still_water_image.png");
+	backgroundImage = Sprite(pRenderer, "../Assets/textures/Still_water_image2.png");
 
+	backgroundImage2 = Sprite(pRenderer, "../Assets/textures/Still_water_image2.png");
 
-	int backgroundWidth = backgroundImage.src.w;
-	int backgroundHeight = backgroundImage.src.h;
+	backgroundImage2.dst.w = 1200;
+	backgroundImage2.dst.h = 600;
+	backgroundImage2.dst.x = 1200;
 
-	backgroundImage.dst.w = backgroundWidth;
-	backgroundImage.dst.h = backgroundHeight;
+	//int backgroundWidth = backgroundImage.src.w;
+	//int backgroundHeight = backgroundImage.src.h;
+
+	backgroundImage.dst.w = 1200;
+	backgroundImage.dst.h = 600;
+	backgroundImage.dst.x = 0;
 
 	/////////////////////////////////////////////////
 
@@ -693,6 +700,23 @@ void Input()
 void Update()
 {
 
+	
+
+	backgroundImage.dst.x -=2;
+
+	if (backgroundImage.dst.x <= -1200)
+	{
+		backgroundImage.dst.x = 0;
+	}
+	
+	backgroundImage2.dst.x -=2;
+
+	if (backgroundImage2.dst.x <= 0)
+	{
+		backgroundImage2.dst.x = 1200;
+	}
+
+
 	if (isUpPressed)
 	{
 		playerShip.dst.y -= playerSpeedPx / FPS;
@@ -829,6 +853,8 @@ void Update()
 
 	//renderAni.nextFrame(0.1);
 
+
+
 }
 
 void Draw()
@@ -844,6 +870,7 @@ void Draw()
 
 	// calling on the draw function for background
 	backgroundImage.draw(pRenderer);
+	backgroundImage2.draw(pRenderer);
 
 	// calling on user ship
 	playerShip.draw(pRenderer);
