@@ -180,6 +180,7 @@ namespace ye {
 
 using namespace ye;
 
+std::vector<Sprite> bullets;
 Sprite newSprite;
 
 
@@ -504,7 +505,10 @@ Sprite enemyShip = Sprite();
 Sprite kelp = Sprite();
 Sprite rock1 = Sprite();
 Sprite lighthouse1 = Sprite();
-Sprite renderAmmo = Sprite();
+//Sprite renderAmmo;
+
+
+
 
 void load()
 {
@@ -521,7 +525,7 @@ void load()
 
 	/////////////////////////////////////////////////
 
-	playerShip = Sprite(pRenderer, "../Assets/textures/usership.png");
+	playerShip = Sprite(pRenderer, "../Assets/textures/realexplodingcat1.png");
 
 
 	int userWidth = playerShip.src.w / 10;
@@ -578,17 +582,16 @@ void load()
 
 	/// ////////////////////////////////////////////////
 
-	renderAmmo = Sprite(pRenderer, "../Assets/textures/cannonball.png");
+	//renderAmmo = Sprite(pRenderer, "../Assets/textures/cannonball.png");
 
 
-	int ammoWidth = renderAmmo.src.w / 2;
-	int ammoHeight = renderAmmo.src.h / 2;
-
-	renderAmmo.dst.w = ammoWidth;
-	renderAmmo.dst.h = ammoHeight;
-	renderAmmo.dst.x = (WINDOW_WIDTH / 4); //start with left eighth
-	renderAmmo.dst.y = (WINDOW_HEIGHT / 2); // and up
-
+	//int ammoWidth = renderAmmo.src.w / 2;
+	//int ammoHeight = renderAmmo.src.h / 2;
+	//
+	//renderAmmo.dst.w = ammoWidth;
+	//renderAmmo.dst.h = ammoHeight;
+	//renderAmmo.dst.x = (WINDOW_WIDTH / 4); //start with left eighth
+	//renderAmmo.dst.y = (WINDOW_HEIGHT / 2); // and up
 
 
 
@@ -605,6 +608,7 @@ bool isBackPressed = false;
 const float playerSpeedPx = 600.0f; //pixels per second
 const float playerShootCoolDownDuration = 0.5f; // time between shots
 float playerShootCoolDownTimer = 0.0f; //determines when we can shoot again
+int bulletSpeed = 350.0f;
 
 
 void Input()
@@ -713,10 +717,16 @@ void Update()
 		//if player is off cooldown
 		if (playerShootCoolDownTimer <= 0.0f)
 		{
+
+
 			std::cout << "Shoot!" << std::endl;
+
+			Sprite renderAmmo = Sprite(pRenderer, "../Assets/textures/cannonball.png");
 
 			renderAmmo.dst.x = playerShip.dst.x + playerShip.dst.h - renderAmmo.dst.w;
 			renderAmmo.dst.y = playerShip.dst.y + playerShip.dst.w / 2;
+
+			bullets.push_back(renderAmmo);
 
 			//reset cool down timer
 			playerShootCoolDownTimer = playerShootCoolDownDuration;
@@ -732,7 +742,19 @@ void Update()
 	playerShootCoolDownTimer -= deltaTime;
 
 	//move bullet
-	renderAmmo.dst.x += 5;
+//	renderAmmo.dst.x += 5;
+
+	for (int i = 0; i < bullets.size(); i++)
+	{
+		bullets[i].dst.x += bulletSpeed * deltaTime;
+	}
+
+	//int i = 0;
+	//while (i < bullets.size())
+	//{
+	//	i++;
+	//}
+	
 
 	//keeping player within the screen
 
@@ -836,7 +858,13 @@ void Draw()
 	rock1.draw(pRenderer);
 
 	//calling on cannonball
-	renderAmmo.draw(pRenderer);
+	//renderAmmo.draw(pRenderer);
+
+
+	for (int i = 0; i < bullets.size(); i++)
+	{
+		bullets[i].draw(pRenderer);
+	}
 
 	// calling on lighthouse
 	lighthouse1.draw(pRenderer);
