@@ -29,7 +29,9 @@ SDL_Rect mySpriteSrc;
 SDL_Rect mySpriteDst;
 SDL_Rect src;
 SDL_Rect dst;
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////Ye - Namespace////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ye
 {
 
@@ -43,54 +45,60 @@ namespace ye
 	struct Sprite
 	{
 
-		void setPosition(int x, int y)
-		{
-			position.x = x;
-			position.y = y;
+	private:
 
-		}
-		Vec2 getSize()
+		SDL_Texture* pTexture;
+		SDL_Rect src;
+		SDL_Rect dst;
+
+		float animationCurrentFrame = 0.0f;
+
+	public:
+
+		double rotationDegrees = 0;
+		SDL_RendererFlip flipState = SDL_FLIP_NONE;
+		Vec2 position;
+		int animationFrameCount = 1;
+
+
+		void setSize(Vec2 sizeWidthHeight)
 		{
-			Vec2 sizeXY{ dst.w, dst.h };
-			return sizeXY;
+			dst.w = sizeWidthHeight.x;
+			dst.h = sizeWidthHeight.y;
 		}
+
 		void setSize(int w, int h)
 		{
 			dst.w = w;
 			dst.h = h;
 		}
 
-	public:
+		Vec2 getSize()
+		{
+			Vec2 sizeXY{ dst.w, dst.h };
+			return sizeXY;
+		}
 
-		Vec2 position;
-		SDL_Texture* pTexture;
-		SDL_Rect src;
-		SDL_Rect dst;
-		double rotationDegrees = 0;
-		SDL_RendererFlip flipState = SDL_FLIP_NONE;
-
-
+		void SetSpriteSheetFrameSize(int width, int height)
+		{
+			src.w = width;
+			src.h = height;
+		}
 
 		Sprite()
 		{
+			std::cout << "Sprite Default Constructor" << std::endl;
 			pTexture = nullptr;
-			src = { 0, 0, 0, 0 };
-			dst = { 0, 0, 0 ,0 };
-		}
-
-		void draw(SDL_Renderer* renderer)
-		{
-
-			int result = SDL_RenderCopy(renderer, pTexture, &src, &dst);
-			/*if (result != 0)
-			{
-				std::cout << "Render Failed!" << SDL_GetError() << std::endl;
-			}*/
+			src = SDL_Rect{ 0, 0, 0, 0 };
+			dst = SDL_Rect{ 0, 0, 0 ,0 };
 		}
 
 		//a non-default constructor
 		Sprite(SDL_Renderer* renderer, const char* imageFilePath)
 		{
+
+			std::cout << "Sprite filepath Constructor" << std::endl;
+			src = SDL_Rect{ 0, 0, 0, 0 };
 
 			pTexture = IMG_LoadTexture(renderer, imageFilePath);
 
@@ -103,18 +111,64 @@ namespace ye
 				std::cout << "Image Load Succesful! " << std::endl;
 			}
 
-			if (SDL_QueryTexture(pTexture, NULL, NULL, &src.w, &src.h) != 0)
-			{
-				std::cout << "Query Texture Failed! " << SDL_GetError() << std::endl;
-			}
-			src.x = 0;
-			src.y = 0;
+			SDL_QueryTexture(pTexture, NULL, NULL, &src.w, &src.h);
 
-			dst.x = 0;
-			dst.y = 0;
-			dst.w = src.w;
-			dst.h = src.h;
+			dst = SDL_Rect{ 0, 0, src.w, src.h };
+
 		}
+
+		Sprite(SDL_Renderer* renderer, const char* imageFilePath, int frameSizeX, int frameSizeY, int frameCount) : Sprite(renderer, imageFilePath)
+		{
+			SetSpriteSheetFrameSize(frameSizeX, frameSizeY);
+			setSize(frameSizeX, frameSizeY);
+			animationFrameCount = frameCount;
+
+			pTexture = IMG_LoadTexture(renderer, imageFilePath);
+
+			if (pTexture == NULL)
+			{
+				std::cout << "Image Load Failed! " << SDL_GetError() << std::endl;
+			}
+			else
+			{
+				std::cout << "Image Load Succesful! " << std::endl;
+			}
+		}
+
+		void draw(SDL_Renderer* renderer)
+		{
+			dst.x = position.x;
+			dst.y = position.y;
+			SDL_RenderCopyEx(renderer, pTexture, &src, &dst, rotationDegrees, NULL, flipState);
+
+		}
+
+		void NextFrame()
+		{
+			SetFrame(animationCurrentFrame + 1);
+		}
+
+		void SetFrame(int frame)
+		{
+			animationCurrentFrame = frame % animationFrameCount;
+			src.x = src.w * animationCurrentFrame;
+		}
+
+		void AddFrameTime(float timeScale)
+		{
+			animationCurrentFrame += timeScale;
+			if (animationCurrentFrame >= animationFrameCount)
+			{
+				animationCurrentFrame -= animationFrameCount;
+			}
+		}
+
+		void setPosition(int x, int y)
+		{
+			position.x = x;
+			position.y = y;
+		}
+
 
 		SDL_Rect GetRect() const
 		{
@@ -124,29 +178,32 @@ namespace ye
 			return returnValue;
 
 		}
-	};
+	}; // struct sprite
+
+
 	class Bullet
 	{
 	public:
 
 		Sprite sprite;
 		Vec2 velocity;
+
+		//move bullet
 		void Update()
 		{
-			sprite.dst.x += velocity.x * deltaTime;
-
-			sprite.dst.y += velocity.y * deltaTime;
+			sprite.position.x += velocity.x * deltaTime;
+			sprite.position.y += velocity.y * deltaTime;
 		}
 
 	};
 
-	class Enemy
+	class Ship
 	{
 	public:
 
 		Sprite sprite;
-		float fireRepeatDelay = 100.0f;
 		float movesSpeedPx = 100;
+		float fireRepeatDelay = 0.5f;
 
 
 	private:
@@ -157,43 +214,40 @@ namespace ye
 
 		void Move(Vec2 input)
 		{
-
-			sprite.dst.x += input.x * (movesSpeedPx * deltaTime);
-			sprite.dst.y += input.y * (movesSpeedPx * deltaTime);
+			sprite.position.x += input.x * ((movesSpeedPx * deltaTime) + 0.5);
+			sprite.position.y += input.y * ((movesSpeedPx * deltaTime) + 0.5);
 		};
+
 
 		void Shoot(bool towardRight, std::vector<Bullet>& container, Vec2 velocity)
 		{
-
 			//create new bullet
-			Sprite renderAmmo = Sprite(pRenderer, "../Assets/textures/bullet.png");
+			Sprite renderAmmo = Sprite(pRenderer, "../Assets/textures/cannonball.png");
 
 			//start bullet at player sprite pos
-			renderAmmo.dst.x = sprite.dst.x;
+			renderAmmo.position.x = sprite.position.x;
 			if (towardRight)
 			{
-				renderAmmo.dst.x += sprite.getSize().x;
+				renderAmmo.position.x += sprite.getSize().x;
 			}
 
-			renderAmmo.dst.y = sprite.dst.y + (sprite.getSize().y / 2) - (sprite.getSize().x / 2);
+			renderAmmo.position.y = sprite.position.y + (sprite.getSize().y / 2) - (renderAmmo.getSize().y / 2);
 
+			Bullet bullet;
+			bullet.sprite = renderAmmo;
+			bullet.velocity = velocity;
 
-			Bullet bullets;
-			bullets.sprite = renderAmmo;
-			bullets.velocity = velocity;
-			// add bullet to a container
-			container.push_back(bullets);
+			// add bullet to container
+			container.push_back(bullet);
 
 			//reset cool down timer
 			fireRepeatTimer = fireRepeatDelay;
+
 		};
 
 		void Update()
 		{
-
 			fireRepeatTimer -= deltaTime;
-
-
 		};
 
 		bool CanShoot()
@@ -202,8 +256,9 @@ namespace ye
 		}
 
 	};
+
 	// Part of AABB collision detection. 
-// Returns true if the bounds defined by minA and maxA overlap with the bounds defined by minB and maxB
+	// Returns true if the bounds defined by minA and maxA overlap with the bounds defined by minB and maxB
 	bool AreBoundsOverlapping(int minA, int maxA, int minB, int maxB)
 	{
 		bool isOverlapping = false;
@@ -214,68 +269,61 @@ namespace ye
 		return isOverlapping;
 	}
 
-	bool AreSpritesColliding(const Sprite& A, const Sprite& B)
+	bool AreSpritesColliding(Sprite A, Sprite B)
 	{
-		// get the bounds of each sprite on x and y
-		int minAx, maxAx, minBx, maxBx;
-		int minAy, maxAy, minBy, maxBy;
-
 		SDL_Rect boundsA = A.GetRect();
 		SDL_Rect boundsB = B.GetRect();
 
-		// Sprite A
-		minAx = boundsA.x;
-		minAy = boundsA.y;
-		maxAx = boundsA.x + boundsA.w;
-		maxAy = boundsA.y + boundsA.h;
-
-		// Sprite B
-		minBx = boundsB.x;
-		minBy = boundsB.y;
-		maxBx = boundsB.x + boundsB.w;
-		maxBy = boundsB.y + boundsB.h;
-
-		bool overlapOnX = AreBoundsOverlapping(minAx, maxAx, minBx, maxBx);
-		bool overlapOnY = AreBoundsOverlapping(minAx, maxAx, minBx, maxBx);
-
 		SDL_bool isColliding = SDL_HasIntersection(&boundsA, &boundsB);
-		return isColliding;
+
+		return (bool)isColliding;
 	}
+
 
 }
 
 using namespace ye;
 
 // enemy ships / shooting
-Enemy enemyShip;
-std::vector<Enemy> enemyContainer;
+Ship enemyShip;
+std::vector<Ship> enemyContainer;
 std::vector<Bullet> enemyBulletContainer;
 float enemySpawnDelay = 2.0f;
 float enemySpawnTimer = 0.0f;
 
+//character bullets
+std::vector<Bullet> bulletContainer;
 
-Sprite backgroundImage = Sprite();
-Sprite backgroundImage2 = Sprite();
-Sprite playerShip = Sprite();
+///////////
 
-Sprite kelp = Sprite();
-Sprite rock1 = Sprite();
-Sprite lighthouse1 = Sprite();
+Sprite backgroundImage;
+Sprite backgroundImage2;
 
-std::vector<Sprite> bulletContainer;
+Ship playerShip;
+
+Sprite kelp;
+Sprite rock1;
+Sprite lighthouse;
+
 Sprite newSprite;
 
 
-
-//init is short for initialize, we are setting p the game window, start SDL feature, ect
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////Init////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// this is the exact same as joss' now
 bool Init()
 {
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+	{
+		std::cout << "Sdl Init Failed" << SDL_GetError() << std::endl;
+		return false;
+	}
 
-	SDL_Init(SDL_INIT_EVERYTHING);
+	std::cout << "Sdl Init Success" << std::endl;
+
 
 	// Display Main SDL Window
-	// get pointer to SDL_WINDOW object
-
 	pWindow = SDL_CreateWindow("Thornewell_101466157", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0
 		// (borderless) SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS 
 	);
@@ -284,13 +332,12 @@ bool Init()
 	if (pWindow == NULL) //if the window creations failed...
 	{
 		std::cout << "Window Creation Failed! " << SDL_GetError() << std::endl;
+		return false;
 	}
 	else
 	{
 		std::cout << "Window Creation Succesful! " << std::endl;
 	}
-
-
 
 	//get pointer to SDL_Renderer object for use of drawing sprites
 	pRenderer = SDL_CreateRenderer(pWindow, -1, 0);
@@ -298,91 +345,90 @@ bool Init()
 	if (pRenderer == NULL)
 	{
 		std::cout << "Renderer Creation Failed! " << SDL_GetError() << std::endl;
+		return false;
 	}
 	else
 	{
 		std::cout << "Renderer Creation Succesful! " << std::endl;
 	}
+
 	return true;
 }
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////Load////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void load()
 {
 	//loading all textures...
-	//SDL_Texture * IMG_LoadTexture(SDL_Renderer *renderer, const char *file)
+
 	backgroundImage = Sprite(pRenderer, "../Assets/textures/Still_water_image2.png");
+	backgroundImage.position = { 0,0 };
+	backgroundImage.setSize(1200, 600);
 
 	backgroundImage2 = Sprite(pRenderer, "../Assets/textures/Still_water_image3.png");
+	backgroundImage2.position = { 1200,0 };
+	backgroundImage2.setSize(1200, 600);
 
-	backgroundImage2.dst.w = 1200;
-	backgroundImage2.dst.h = 600;
-	backgroundImage2.dst.x = 1200;
-
-	backgroundImage.dst.w = 1200;
-	backgroundImage.dst.h = 600;
-	backgroundImage.dst.x = 0;
 
 	/////////////////////////////////////////////////
 
-	playerShip = Sprite(pRenderer, "../Assets/textures/realexplodingcat1.png");
+	char* imageToLoad = "../Assets/textures/usership.png";
+	playerShip.sprite = Sprite(pRenderer, imageToLoad);
 
+	Vec2 playerSize = playerShip.sprite.getSize();
+	int playerWidth = playerSize.x / 10;
+	int playerHeight = playerSize.y / 10;
 
-	int userWidth = playerShip.src.w / 10;
-	int userHeight = playerShip.src.h / 10;
+	playerShip.sprite.setSize(playerWidth, playerHeight);
 
-	playerShip.dst.w = userWidth;
-	playerShip.dst.h = userHeight;
-	playerShip.dst.x = (WINDOW_WIDTH / 8); //start with left eighth
-	playerShip.dst.y = (WINDOW_HEIGHT / 2) - userHeight / 2; // in middle
+	playerShip.sprite.position.x = (WINDOW_WIDTH / 8); //start with left eighth
+	playerShip.sprite.position.y = (WINDOW_HEIGHT / 2) - playerHeight / 2; // in middle
 
 
 	/////////////////////////////////////////////////
 
 	kelp = Sprite(pRenderer, "../Assets/textures/kelp.png");
-
-
-	int objectWidth = kelp.src.w / 2;
-	int objectHeight = kelp.src.h / 2;
-
-	kelp.dst.w = objectWidth;
-	kelp.dst.h = objectHeight;
-	kelp.dst.x = (WINDOW_WIDTH / 2); //start with left eighth
-	kelp.dst.y = (WINDOW_HEIGHT / 7); // and up
+	kelp.position = { 500, 300 };
 
 
 	rock1 = Sprite(pRenderer, "../Assets/textures/rock1.png");
-	rock1.dst.x = 700;
-	rock1.dst.y = 200;
+	rock1.position = { 700, 200 };
 
-	lighthouse1 = Sprite(pRenderer, "../Assets/textures/lighthouse.png");
+	/////////////////////////////////////////////////
 
-	int lighthouseWidth = lighthouse1.src.w / 4;
-	int lighthouseHeight = lighthouse1.src.h / 4;
+	char* imageToLoad2 = "../Assets/textures/lighthouse.png";
+	lighthouse = Sprite(pRenderer, imageToLoad2);
 
-	lighthouse1.dst.w = lighthouseWidth;
-	lighthouse1.dst.h = lighthouseHeight;
-	lighthouse1.dst.x = 1000;
-	lighthouse1.dst.y = 450;
+	Vec2 lighthouseSize = lighthouse.getSize();
+	int lighthouseWidth = lighthouseSize.x / 4;
+	int lighthouseHeight = lighthouseSize.y / 4;
+
+	lighthouse.setSize(lighthouseWidth, lighthouseHeight);
+	lighthouse.position = { 1000, 450 };
 
 	///////////////////////////////////////////////////
 
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////Input////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // player input variables
 bool isUpPressed = false;
 bool isDownPressed = false;
 bool isShootPressed = false;
 bool isForwardPressed = false;
 bool isBackPressed = false;
-const float playerSpeedPx = 600.0f; //pixels per second
-const float playerShootCoolDownDuration = 0.5f; // time between shots
-float playerShootCoolDownTimer = 0.0f; //determines when we can shoot again
-int bulletSpeed = 350.0f;
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////Input////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//const float playerSpeedPx = 600.0f; //pixels per second
+//const float playerShootCoolDownDuration = 0.1f; // time between shots
+//float playerShootCoolDownTimer = 0.0f; //determines when we can shoot again
+int bulletSpeed = 600.0f;
+
 void Input()
 {
 	SDL_Event event;
@@ -458,84 +504,70 @@ void Input()
 
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////Update////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void UpdatePlayer()
 {
-	ye::Vec2 inputVector;
+	ye::Vec2 inputVector{};
 
 	if (isUpPressed)
 	{
-		playerShip.dst.y -= playerSpeedPx * deltaTime;
+		inputVector.y = -1;
 
-		if (playerShip.dst.y < 0)
-			playerShip.dst.y = 0;
+		if (playerShip.sprite.position.y < 0)
+			playerShip.sprite.position.y = 0;
 	}
 	if (isDownPressed)
 	{
 
-		playerShip.dst.y += playerSpeedPx * deltaTime;
-
+		inputVector.y = 1;
+		const int lowestPointOnScreen = WINDOW_HEIGHT - playerShip.sprite.getSize().y;
+		if (playerShip.sprite.position.y > lowestPointOnScreen)
+		{
+			playerShip.sprite.position.y = lowestPointOnScreen;
+		}
 	}
 	if (isForwardPressed)
 	{
-		playerShip.dst.x += playerSpeedPx / FPS;
+		inputVector.x = 1;
 
+		if (playerShip.sprite.position.x >= WINDOW_WIDTH - playerShip.sprite.getSize().x)
+		{
+			playerShip.sprite.position.x = WINDOW_WIDTH - playerShip.sprite.getSize().x;
+		}
 	}
 	if (isBackPressed)
 	{
-		playerShip.dst.x -= playerSpeedPx * deltaTime;
-
-	}
-
-	void detectCollisions();
-	{
-
-		Sprite& playerSprite = playerShip;
-
-		//std::vector<Bullet>::iterator
-		for (auto it = enemyBulletContainer.begin(); it != enemyBulletContainer.end();)
+		inputVector.x = -1;
+		const int lowestSideOnScreen = 0;
+		if (playerShip.sprite.position.x <= lowestSideOnScreen)
 		{
-			Sprite& bulletSprite = it->sprite;
-			if (AreSpritesColliding(playerSprite, bulletSprite))
-			{
-				//std::cout << "Player Hit";
-				playerShip.rotationDegrees += 10;
-				it = enemyBulletContainer.erase(it);
-
-			}
-			if (it != enemyBulletContainer.end())
-			{
-				it++;
-			}
+			playerShip.sprite.position.x = lowestSideOnScreen;
 		}
-
-		//else
-	//{
-	//	it++;
-	//}
-		//destroy bullet
-
-// //player bullets vs enemy ship
-//for (auto itBullet = bulletContainer.begin(); itBullet != bulletContainer.end();)
-//{
-//Sprite& bullet = itBullet->sprite;
-//	for (auto itEnemy = enemyContainer.begin(); itEnemy != enemyContainer.end();)
-//	{
-//		if (AreSpritesColliding(itBullet-> sprite, itEnemy-> sprite))
-//
-//	}
-//}
 	}
+
+	//if player is off cooldown
+	if (isShootPressed && playerShip.CanShoot())
+	{
+		bool toRight = true;
+		Vec2 velocity = { 500, 0 };
+		playerShip.Shoot(toRight, bulletContainer, velocity);
+
+	}
+
+	playerShip.Move(inputVector);
+	playerShip.Update();
 }
 
 void EnemySpawner()
 {
 	enemyShip.sprite = Sprite(pRenderer, "../Assets/textures/enemy1.png");
-	enemyShip.sprite.dst.x = 1200 + 54; //spawns them outside of the screen on the right hand side
-	enemyShip.sprite.dst.y = rand() % 720 - 61; //randomized pos
+	enemyShip.sprite.position.x = 1200 + 54; //spawns them outside of the screen on the right hand side
+	enemyShip.sprite.position.y = rand() % 720 - 61; //randomized pos
 
-
-
-	Enemy enemy1;
+	Ship enemy1;
 	enemy1.sprite = enemyShip.sprite; //sprites stay the same
 	enemy1.fireRepeatDelay = 100.0f; //setting fire speed
 	enemy1.movesSpeedPx = 100; // making sure it moves at the same time
@@ -548,95 +580,94 @@ void EnemySpawner()
 	enemySpawnTimer = enemySpawnDelay;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////Update////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-void Update()
+void detectCollisions()
 {
-	UpdatePlayer();
 
-	backgroundImage.dst.x -= 2;
+	Sprite& playerSprite = playerShip.sprite;
 
-	if (backgroundImage.dst.x <= -1200)
+	//std::vector<Bullet>::iterator
+	for (auto it = enemyBulletContainer.begin(); it != enemyBulletContainer.end();)
 	{
-		backgroundImage.dst.x = 0;
-	}
+		Sprite& bulletSprite = it->sprite;
 
-	backgroundImage2.dst.x -= 2;
-
-	if (backgroundImage2.dst.x <= 0)
-	{
-		backgroundImage2.dst.x = 1200;
-	}
-
-
-	if (isShootPressed)
-	{
-		//if player is off cooldown
-		if (playerShootCoolDownTimer <= 0.0f)
+		if (AreSpritesColliding(playerSprite, bulletSprite))
 		{
+			playerShip.sprite.rotationDegrees += 10;
 
-			std::cout << "Shoot!" << std::endl;
-
-			Sprite renderAmmo = Sprite(pRenderer, "../Assets/textures/cannonball.png");
-
-			renderAmmo.dst.x = playerShip.dst.x + playerShip.dst.h - renderAmmo.dst.w;
-			renderAmmo.dst.y = playerShip.dst.y + playerShip.dst.w / 2;
-
-			bulletContainer.push_back(renderAmmo);
-
-			//reset cool down timer
-			playerShootCoolDownTimer = playerShootCoolDownDuration;
+			//destroy the bullet
+			it = enemyBulletContainer.erase(it);
 
 		}
-
-
+		else
+		{
+			it++;
+		}
 	}
 
-	//tick down shoot cooldown
-	playerShootCoolDownTimer -= deltaTime;
+	//player bullets vs enemy ship
 
-	//move bullet
+	for (auto itBullet = bulletContainer.begin(); itBullet != bulletContainer.end();)
+	{
+
+		for (auto itEnemy = enemyContainer.begin(); itEnemy != enemyContainer.end();)
+		{
+			Sprite& bullet = itBullet->sprite;
+			Sprite& enemy = itEnemy->sprite;
+
+			if (AreSpritesColliding(itBullet->sprite, itEnemy->sprite))
+			{
+				//destroy both
+				itBullet = bulletContainer.erase(itBullet);
+				itEnemy = enemyContainer.erase(itEnemy);
+
+				if (itBullet == bulletContainer.end())
+				{
+					break;
+				}
+			}
+			else
+			{
+				itEnemy++;
+			}
+
+		}
+		if (itBullet != bulletContainer.end())
+		{
+			itBullet++;
+		}
+	}
+}
+
+
+
+void Update()
+{
+
+	UpdatePlayer();
+
+	//this will be moving background... do not delete
+
+	backgroundImage.position.x -= 2;
+
+	if (backgroundImage.position.x <= -1200)
+	{
+		backgroundImage.position.x = 0;
+	}
+
+	backgroundImage2.position.x -= 2;
+
+	if (backgroundImage2.position.x <= 0)
+	{
+		backgroundImage2.position.x = 1200;
+	}
+
+	//move all bullets across the screen
 	for (int i = 0; i < bulletContainer.size(); i++)
 	{
-		bulletContainer[i].dst.x += bulletSpeed * deltaTime;
+		bulletContainer[i].Update();
 	}
 
-	//keeping player within the screen
-
-	//width for player
-	if (playerShip.dst.x >= WINDOW_WIDTH - playerShip.dst.w)
-	{
-		playerShip.dst.x = WINDOW_WIDTH - playerShip.dst.w;
-	}
-
-	if (playerShip.dst.x <= WINDOW_WIDTH * 0)
-	{
-		playerShip.dst.x = (WINDOW_HEIGHT * 0);
-	}
-
-	if (playerShip.dst.x <= 0 + 10)
-	{
-		playerShip.dst.x = 10;
-	}
-
-	//height for player
-	if (playerShip.dst.y >= WINDOW_HEIGHT - playerShip.dst.h)
-	{
-		playerShip.dst.y = WINDOW_HEIGHT - playerShip.dst.h;
-	}
-
-	if (playerShip.dst.y <= WINDOW_HEIGHT * 0)
-	{
-		playerShip.dst.y = (WINDOW_HEIGHT * 0);
-	}
-
-	if (playerShip.dst.y <= 0 + 10)
-	{
-		playerShip.dst.y = 10;
-	}
-	////////////////////////////////////
-
+	//check this later
 	for (int i = 0; i < enemyBulletContainer.size(); i++)
 	{
 		enemyBulletContainer[i].Update();
@@ -644,7 +675,7 @@ void Update()
 
 	for (int i = 0; i < enemyContainer.size(); i++)
 	{
-		Enemy& enemyBois = enemyContainer[i];
+		Ship& enemyBois = enemyContainer[i];
 		enemyBois.Move({ -1, 0 });
 		enemyBois.Update();
 		if (enemyBois.CanShoot())
@@ -652,11 +683,10 @@ void Update()
 			bool towardsRight = false;
 			Vec2 velocity = { -400, 0 };
 			enemyBois.Shoot(towardsRight, enemyBulletContainer, velocity);
-
 		}
-
 	}
 
+	//check these later
 	enemySpawnTimer -= deltaTime;
 
 	if (enemySpawnTimer <= 0)
@@ -664,22 +694,25 @@ void Update()
 		EnemySpawner();
 	}
 
-	//detectCollisions();
+	detectCollisions();
+
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////Draw////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//this should be cleaned up now
 void Draw()
 {
 	SDL_SetRenderDrawColor(pRenderer, 0, 0, 20, 255);
 	SDL_RenderClear(pRenderer);
 
 	// calling on the draw function for background
+
 	backgroundImage.draw(pRenderer);
 	backgroundImage2.draw(pRenderer);
 
 	// calling on user ship
-	playerShip.draw(pRenderer);
+	playerShip.sprite.draw(pRenderer);
 
 	//calling on first object
 	kelp.draw(pRenderer);
@@ -687,11 +720,12 @@ void Draw()
 	//calling on rock1
 	rock1.draw(pRenderer);
 
-	//player bullets
+	//draw ALL bullets on screen
 	for (int i = 0; i < bulletContainer.size(); i++)
 	{
-		bulletContainer[i].draw(pRenderer);
+		bulletContainer[i].sprite.draw(pRenderer);
 	}
+
 	//enemy
 	for (int i = 0; i < enemyContainer.size(); i++)
 	{
@@ -703,7 +737,8 @@ void Draw()
 		enemyBulletContainer[i].sprite.draw(pRenderer);
 	}
 	// calling on lighthouse
-	lighthouse1.draw(pRenderer);
+	lighthouse.draw(pRenderer);
+
 
 	//show the back buffer
 	SDL_RenderPresent(pRenderer);
